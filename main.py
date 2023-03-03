@@ -7,6 +7,10 @@ from app.keyboards import keyboards as kb
 from database import db_start, create_profile, edit_profile
 import dotenv
 import os
+import sqlite3 as sq
+
+db = sq.connect('tg.db')
+cur = db.cursor()
 
 dotenv.load_dotenv()
 storage = MemoryStorage()
@@ -26,9 +30,18 @@ class AddItems(StatesGroup):
     price = State()
 
 
+class AddToCart(StatesGroup):
+    looking = State()
+    adding = State()
+
+
 @dp.message_handler(commands=['start'])
 async def cmd_start(message: types.Message):
-    await message.answer(f'Добро пожаловать, {message.from_user.first_name}', reply_markup=kb.main)
+    await message.answer(f'Добро пожаловать, {message.from_user.first_name}!', reply_markup=kb.main)
+    user = cur.execute("SELECT a_id FROM accounts WHERE a_id == '{key}'".format(key=message.from_user.id)).fetchone()
+    if not user:
+        cur.execute("INSERT INTO accounts VALUES(?, ?)", (message.from_user.id, ''))
+        db.commit()
     if message.from_user.id == int(os.getenv('ADMIN_ID')):
         await message.answer(f'Вы авторизовались как администратор!', reply_markup=kb.admin_main)
 
@@ -105,6 +118,25 @@ async def add_item_price(message: types.Message, state: FSMContext) -> None:
 @dp.message_handler(text='Каталог 👟')
 async def catalog(message: types.Message) -> None:
     await message.answer(f'Выберите кроссы', reply_markup=kb.catalog)
+
+
+@dp.callback_query_handler(lambda callback_query: callback_query.data == 'add_to_cart')
+async def add_to_cart(message: types.Message, state: FSMContext) -> None:
+    async with state.proxy() as data:
+        cur.execute("UPDATE accounts SET cart_id = cart_id + {tovar} WHERE a_id == {user}".format(tovar=data['tovar'], user=message.from_user.id))
+        await message.answer(f'Товар добавлен в корзину!')
+        await state.finish()
+
+
+@dp.callback_query_handler(lambda c: True)
+async def process_callback_button(callback_query: types.CallbackQuery, state: FSMContext):
+    cur.execute("SELECT * FROM items WHERE name == '{key}'".format(key=callback_query.data))
+    item = cur.fetchall()
+    await bot.send_photo(callback_query.from_user.id, photo=item[0][4],
+                         caption=f"Вы выбрали {item[0][1]}!\n"
+                                 f"Цена: {item[0][3]}", reply_markup=kb.add_to_cart)
+    async with state.proxy() as data:
+        data['tovar'] = item[0][0]
 
 
 if __name__ == '__main__':

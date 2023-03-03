@@ -1,11 +1,10 @@
 import sqlite3 as sq
-from aiogram import Bot, Dispatcher, executor, types
+
+db = sq.connect('tg.db')
+cur = db.cursor()
 
 
 async def db_start():
-    global db, cur
-    db = sq.connect('tg.db')
-    cur = db.cursor()
     cur.execute("CREATE TABLE IF NOT EXISTS accounts(a_id TEXT PRIMARY KEY, cart_id TEXT)")
     cur.execute("CREATE TABLE IF NOT EXISTS items(i_id TEXT PRIMARY KEY, name TEXT, desc TEXT, price TEXT, photo TEXT)")
     cur.execute("CREATE TABLE IF NOT EXISTS brands(b_id TEXT PRIMARY KEY, name TEXT, b_desc TEXT)")
@@ -26,8 +25,5 @@ async def edit_profile(state, item_id):
         db.commit()
 
 
-db = sq.connect('tg.db')
-cur = db.cursor()
 cur.execute("SELECT name FROM items")
-rows = cur.fetchall()
-print(rows[0])
+items = cur.fetchall()
