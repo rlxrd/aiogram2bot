@@ -19,6 +19,7 @@ dp = Dispatcher(bot, storage=storage)
 
 
 async def on_startup(_):
+    print('Бот запущен!!!')
     await db_start()
 
 
@@ -123,7 +124,8 @@ async def catalog(message: types.Message) -> None:
 @dp.callback_query_handler(lambda callback_query: callback_query.data == 'add_to_cart')
 async def add_to_cart(message: types.Message, state: FSMContext) -> None:
     async with state.proxy() as data:
-        cur.execute("UPDATE accounts SET cart_id = {tovar} WHERE a_id == {user}".format(tovar=data['tovar'], user=message.from_user.id))
+        cur.execute("UPDATE accounts SET cart_id = {tovar} WHERE a_id == {user}".format(tovar=data['tovar'],
+                                                                                        user=message.from_user.id))
         db.commit()
         await message.answer(f'Товар добавлен в корзину!')
         await state.finish()
