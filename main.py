@@ -75,7 +75,6 @@ async def add_item_name(message: types.Message, state: FSMContext) -> None:
         data['name'] = message.text
 
     await message.reply('Теперь отправьте описание товара (только текст!)')
-    await create_profile(item_id=data['iid'])
     await AddItems.next()
 
 
@@ -105,11 +104,12 @@ async def add_item_load_photo(message: types.Message, state: FSMContext) -> None
 @dp.message_handler(state=AddItems.price)
 async def add_item_price(message: types.Message, state: FSMContext) -> None:
     async with state.proxy() as data:
+
         data['price'] = message.text
         await bot.send_photo(chat_id=message.from_user.id,
                              photo=data['photo'],
                              caption=f"{data['name']}, {data['desc']}\n{data['price']}")
-
+    await create_profile(item_id=data['iid'])
     await edit_profile(state, item_id=data['iid'])
     await message.reply('Товар успешно создан!', reply_markup=kb.admin_main)
     await state.finish()
@@ -123,7 +123,8 @@ async def catalog(message: types.Message) -> None:
 @dp.callback_query_handler(lambda callback_query: callback_query.data == 'add_to_cart')
 async def add_to_cart(message: types.Message, state: FSMContext) -> None:
     async with state.proxy() as data:
-        cur.execute("UPDATE accounts SET cart_id = cart_id + {tovar} WHERE a_id == {user}".format(tovar=data['tovar'], user=message.from_user.id))
+        cur.execute("UPDATE accounts SET cart_id = {tovar} WHERE a_id == {user}".format(tovar=data['tovar'], user=message.from_user.id))
+        db.commit()
         await message.answer(f'Товар добавлен в корзину!')
         await state.finish()
 
@@ -138,6 +139,18 @@ async def process_callback_button(callback_query: types.CallbackQuery, state: FS
     async with state.proxy() as data:
         data['tovar'] = item[0][0]
 
+
+@dp.message_handler(text='Корзина 🗑')
+async def catalog(message: types.Message) -> None:
+    cur.execute("SELECT cart_id FROM accounts WHERE a_id == {key}".format(key=message.from_user.id))
+    item = cur.fetchall()
+    if item[0][0] == '':
+        await message.answer(f'Корзина пуста!')
+    else:
+        cur.execute("SELECT * FROM items WHERE i_id == {key}".format(key=item[0][0]))
+        tovar = cur.fetchall()
+        await message.answer(f'Вы выбрали: {tovar[0][1]}\n'
+                             f'Цена: {tovar[0][3]}\n', reply_markup=kb.buy)
 
 if __name__ == '__main__':
     executor.start_polling(dp, on_startup=on_startup)

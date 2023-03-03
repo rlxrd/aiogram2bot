@@ -27,3 +27,6 @@ catalog.add(*buttons)
 
 add_to_cart = InlineKeyboardMarkup(row_width=2)
 add_to_cart.add(InlineKeyboardButton('Добавить в корзину', callback_data='add_to_cart'))
+
+buy = InlineKeyboardMarkup(row_width=1)
+buy.add(InlineKeyboardButton('Купить!', url='https://t.me/timur_py'))
