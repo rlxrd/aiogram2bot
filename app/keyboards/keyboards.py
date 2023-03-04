@@ -1,6 +1,9 @@
 from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, ReplyKeyboardRemove,\
     InlineKeyboardMarkup, InlineKeyboardButton
-from database import items
+import sqlite3 as sq
+
+db = sq.connect('tg.db')
+cur = db.cursor()
 
 main = ReplyKeyboardMarkup(resize_keyboard=True)
 main.add('Каталог 👟').add('Корзина 🗑').add('Контакты 📲')
@@ -15,13 +18,19 @@ cancel.add('Отмена')
 """
 Скрипт создания инлайн кнопок в каталоге с помощью перебора всех имён в БД
 """
-buttons = []
-for item in items:
-    button = InlineKeyboardButton(item[0], callback_data=item[0])
-    buttons.append(button)
 
-catalog = InlineKeyboardMarkup(row_width=2)
-catalog.add(*buttons)
+
+def catalog_buttons():
+    buttons = []
+    cur.execute("SELECT name FROM items")
+    items = cur.fetchall()
+    for item in items:
+        button = InlineKeyboardButton(item[0], callback_data=item[0])
+        buttons.append(button)
+
+    catalog = InlineKeyboardMarkup(row_width=2)
+    return catalog.add(*buttons)
+
 
 #  ------------------------------------------------------------------
 

@@ -125,7 +125,7 @@ async def add_item_price(message: types.Message, state: FSMContext) -> None:
 
 @dp.message_handler(text='Каталог 👟')
 async def catalog(message: types.Message) -> None:
-    await message.answer(f'Выберите кроссы', reply_markup=kb.catalog)
+    await message.answer(f'Выберите кроссы', reply_markup=kb.catalog_buttons())
 
 
 @dp.callback_query_handler(lambda callback_query: callback_query.data == 'add_to_cart')
@@ -158,6 +158,7 @@ async def catalog(message: types.Message) -> None:
     else:
         cur.execute("SELECT * FROM items WHERE i_id == {key}".format(key=item[0][0]))
         tovar = cur.fetchall()
+        print(tovar)
         await message.answer(f'Вы выбрали: {tovar[0][1]}\n'
                              f'Цена: {tovar[0][3]}\n', reply_markup=kb.buy)
 

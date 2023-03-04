@@ -20,11 +20,7 @@ async def create_profile(item_id):
 
 async def edit_profile(state, item_id):
     async with state.proxy() as data:
-        global db, cur
         cur.execute("UPDATE items SET name = '{}', desc = '{}', price = '{}', photo = '{}' WHERE i_id == '{}'".format(
             data['name'], data['desc'], data['price'], data['photo'], item_id))
         db.commit()
 
-
-cur.execute("SELECT name FROM items")
-items = cur.fetchall()
