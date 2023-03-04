@@ -181,5 +181,11 @@ async def sent_for_all(message: types.Message, state: FSMContext):
     await state.finish()
     await message.answer('Рассылка завершена', reply_markup=kb.admin_main)
 
+
+@dp.message_handler()
+async def none(message: types.Message):
+    await message.answer(f'Неизвестная команда!')
+
+
 if __name__ == '__main__':
     executor.start_polling(dp, on_startup=on_startup)
