@@ -36,6 +36,11 @@ class AddToCart(StatesGroup):
     adding = State()
 
 
+class SendToAll(StatesGroup):
+    creating = State()
+    sending = State()
+
+
 @dp.message_handler(commands=['start'])
 async def cmd_start(message: types.Message):
     await message.answer(f'Добро пожаловать, {message.from_user.first_name}!', reply_markup=kb.main)
@@ -60,6 +65,8 @@ async def add_item(message: types.Message) -> None:
     await AddItems.number.set()
     if message.from_user.id == int(os.getenv('ADMIN_ID')):
         await message.answer(f'Напишите НОМЕР (ЛОТ) товара (цифры)', reply_markup=kb.cancel)
+    else:
+        await message.answer(f'Неизвестная команда!')
 
 
 @dp.message_handler(state=AddItems.number)
@@ -153,6 +160,26 @@ async def catalog(message: types.Message) -> None:
         tovar = cur.fetchall()
         await message.answer(f'Вы выбрали: {tovar[0][1]}\n'
                              f'Цена: {tovar[0][3]}\n', reply_markup=kb.buy)
+
+
+@dp.message_handler(text='Сделать рассылку')
+async def send_for_all(message: types.Message) -> None:
+    if message.from_user.id == int(os.getenv('ADMIN_ID')):
+        await SendToAll.creating.set()
+        await message.answer('Введите сообщение', reply_markup=kb.cancel)
+    else:
+        await message.answer('Неизвестная команда!')
+
+
+@dp.message_handler(state=SendToAll.creating)
+async def sent_for_all(message: types.Message, state: FSMContext):
+    await SendToAll.sending.set()
+    cur.execute("SELECT a_id FROM accounts")
+    accs = cur.fetchall()
+    for i in accs:
+        await bot.send_message(i[0], message.text)
+    await state.finish()
+    await message.answer('Рассылка завершена', reply_markup=kb.admin_main)
 
 if __name__ == '__main__':
     executor.start_polling(dp, on_startup=on_startup)
