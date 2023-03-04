@@ -1,5 +1,4 @@
-from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, ReplyKeyboardRemove,\
-    InlineKeyboardMarkup, InlineKeyboardButton
+from aiogram.types import ReplyKeyboardMarkup, InlineKeyboardMarkup, InlineKeyboardButton
 import sqlite3 as sq
 
 db = sq.connect('tg.db')
@@ -9,7 +8,10 @@ main = ReplyKeyboardMarkup(resize_keyboard=True)
 main.add('Каталог 👟').add('Корзина 🗑').add('Контакты 📲')
 
 admin_main = ReplyKeyboardMarkup(resize_keyboard=True)
-admin_main.add('Каталог 👟').add('Корзина 🗑').add('Контакты 📲').add('Добавить товар').add('Сделать рассылку')
+admin_main.add('Каталог 👟').add('Корзина 🗑').add('Контакты 📲').add('Админ-панель')
+
+admin_panel = ReplyKeyboardMarkup(resize_keyboard=True)
+admin_panel.add('Добавить товар').add('Удалить товар').add('Сделать рассылку').add('Отмена')
 
 cancel = ReplyKeyboardMarkup(resize_keyboard=True)
 cancel.add('Отмена')

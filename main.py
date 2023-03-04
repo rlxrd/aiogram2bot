@@ -31,6 +31,10 @@ class AddItems(StatesGroup):
     price = State()
 
 
+class DeleteItems(StatesGroup):
+    number = State()
+
+
 class AddToCart(StatesGroup):
     looking = State()
     adding = State()
@@ -119,6 +123,7 @@ async def add_item_price(message: types.Message, state: FSMContext) -> None:
                              caption=f"{data['name']}, {data['desc']}\n{data['price']}")
     await create_profile(item_id=data['iid'])
     await edit_profile(state, item_id=data['iid'])
+    db.commit()
     await message.reply('Товар успешно создан!', reply_markup=kb.admin_main)
     await state.finish()
 
@@ -181,6 +186,31 @@ async def sent_for_all(message: types.Message, state: FSMContext):
         await bot.send_message(i[0], message.text)
     await state.finish()
     await message.answer('Рассылка завершена', reply_markup=kb.admin_main)
+
+
+@dp.message_handler(text='Админ-панель')
+async def admin_panel(message: types.Message):
+    if message.from_user.id == int(os.getenv('ADMIN_ID')):
+        await message.answer(f'Вы вошли в админ-панель.', reply_markup=kb.admin_panel)
+    else:
+        await message.answer(f'Неизвестная команда!')
+
+
+@dp.message_handler(text='Удалить товар')
+async def delete_item(message: types.Message):
+    if message.from_user.id == int(os.getenv('ADMIN_ID')):
+        await DeleteItems.number.set()
+        await message.answer(f'Введите номер (лот) товара.', reply_markup=kb.cancel)
+    else:
+        await message.answer(f'Неизвестная команда!')
+
+
+@dp.message_handler(state=DeleteItems.number)
+async def delete_item_done(message: types.Message, state: FSMContext):
+    cur.execute("DELETE FROM items WHERE i_id == {key}".format(key=message.text))
+    db.commit()
+    await message.answer(f'Удалено!', reply_markup=kb.admin_panel)
+    await state.finish()
 
 
 @dp.message_handler()
