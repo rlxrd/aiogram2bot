@@ -1,10 +1,10 @@
 from aiogram import Bot, Dispatcher, executor, types
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
-from aiogram.dispatcher.filters import Text
 from aiogram.dispatcher.filters.state import StatesGroup, State
 from aiogram.dispatcher import FSMContext
 from app.keyboards import keyboards as kb
 from database import db_start, create_profile, edit_profile
+from aiogram.utils.exceptions import BotBlocked
 import dotenv
 import os
 import sqlite3 as sq
@@ -177,13 +177,24 @@ async def send_for_all(message: types.Message) -> None:
         await message.answer('Неизвестная команда!')
 
 
+@dp.errors_handler(exception=BotBlocked)
+async def error_bot_blocked_handler(update: types.Update, exception: BotBlocked) -> bool:
+    print('Юзер заблокировал бот')
+    return True
+
+
 @dp.message_handler(state=SendToAll.creating)
 async def sent_for_all(message: types.Message, state: FSMContext):
     await SendToAll.sending.set()
     cur.execute("SELECT a_id FROM accounts")
     accs = cur.fetchall()
     for i in accs:
-        await bot.send_message(i[0], message.text)
+        try:
+            await bot.send_message(i[0], message.text)
+        except Exception as error:
+            cur.execute("DELETE FROM accounts WHERE a_id == {key}".format(key=i[0]))
+            db.commit()
+            print(error)
     await state.finish()
     await message.answer('Рассылка завершена', reply_markup=kb.admin_main)
 
