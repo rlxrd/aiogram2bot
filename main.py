@@ -130,7 +130,12 @@ async def add_item_price(message: types.Message, state: FSMContext) -> None:
 
 @dp.message_handler(text='Каталог 👟')
 async def catalog(message: types.Message) -> None:
-    await message.answer(f'Выберите кроссы', reply_markup=kb.catalog_buttons())
+    cur.execute("SELECT name FROM items")
+    items = cur.fetchall()
+    if not items:
+        await message.answer(f'Каталог пуст!')
+    else:
+        await message.answer(f'Выберите кроссы', reply_markup=kb.catalog_buttons())
 
 
 @dp.callback_query_handler(lambda callback_query: callback_query.data == 'add_to_cart')
@@ -194,7 +199,6 @@ async def sent_for_all(message: types.Message, state: FSMContext):
         except Exception as error:
             cur.execute("DELETE FROM accounts WHERE a_id == {key}".format(key=i[0]))
             db.commit()
-            print(error)
     await state.finish()
     await message.answer('Рассылка завершена', reply_markup=kb.admin_main)
 
@@ -230,4 +234,4 @@ async def none(message: types.Message):
 
 
 if __name__ == '__main__':
-    executor.start_polling(dp, on_startup=on_startup)
+    executor.start_polling(dp, on_startup=on_startup, skip_updates=True)
